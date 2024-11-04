@@ -1,11 +1,21 @@
 #!/bin/sh
 
 check_vh() {
-  if [ $(pidof streaming_client | wc -l) -eq 0 ] && [ $(pidof vhusbdarm | wc -l) -gt 0 ]; then
-    echo "Streaming connection ended, stopping VirtualHereFree server..."
+  # Check if "streaming_client" or "moonlight" is running
+  streaming_or_moonlight_running=$(pidof streaming_client || pidof moonlight)
+
+  # Check if "vhusbdarm" is running
+  vhusbdarm_running=$(pidof vhusbdarm)
+
+  if [ -z "$streaming_or_moonlight_running" ] && [ -n "$vhusbdarm_running" ]; then
+    # If neither "streaming_client" nor "moonlight" processes are running
+    # and "vhusbdarm" is running, stop "vhusbdarm"
+    echo "No streaming connection is established, stopping the VirtualHereFree server..."
     pkill vhusbdarm
-  elif [ $(pidof streaming_client | wc -l) -gt 0 ] && [ $(pidof vhusbdarm | wc -l) -eq 0 ]; then
-    echo "Streaming connection established, starting VirtualHereFree server..."
+  elif [ -n "$streaming_or_moonlight_running" ] && [ -z "$vhusbdarm_running" ]; then
+    # If one of the "streaming_client" or "moonlight" processes is running
+    # and "vhusbdarm" is not running, start "vhusbdarm"
+    echo "Streaming connection established, starting the VirtualHereFree server..."
     /usr/local/bin/vhusbdarm -c /mnt/config/system/virtualherefree_config.ini -b
   fi
 }
